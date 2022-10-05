@@ -92,8 +92,44 @@ export type ComponentProps<T extends ValidComponent> =
  */
 export type Ref<T> = T | ((val: T) => void);
 
+export const $COMPOBJ = Symbol("solid-component-object");
+
+export type ComponentObject<T = any> = {
+  Component: Component<T>;
+  props: T;
+};
+
+export type InspectedElement = JSX.Element | ComponentObject;
+
+let inspectionEnabled = false;
+
+export function isComponentObject(input: unknown): input is ComponentObject;
+export function isComponentObject<T>(
+  input: unknown,
+  component: Component<T>
+): input is ComponentObject<T>;
+export function isComponentObject(input: unknown, component?: Component) {
+  return (
+    !!input &&
+    (input as { $COMPOBJ: Symbol }).$COMPOBJ === $COMPOBJ &&
+    (!component || (input as ComponentObject).Component === component)
+  );
+}
+
+export function inspectElements(cb: () => JSX.Element): InspectedElement[] {
+  try {
+    inspectionEnabled = true;
+    const elements = cb();
+    return Array.isArray(elements) ? elements : [elements];
+  } finally {
+    inspectionEnabled = false;
+  }
+}
+
 export function createComponent<T>(Comp: Component<T>, props: T): JSX.Element {
-  if (hydrationEnabled) {
+  if (inspectionEnabled) {
+    return { Component: Comp, props, $COMPOBJ } as never
+  } else if (hydrationEnabled) {
     if (sharedConfig.context) {
       const c = sharedConfig.context;
       setHydrateContext(nextHydrateContext());

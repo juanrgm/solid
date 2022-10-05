@@ -5,7 +5,9 @@ import {
   splitProps,
   createUniqueId,
   createSignal,
-  createEffect
+  createEffect,
+  inspectElements,
+  isComponentObject
 } from "../src";
 import { createStore } from "../store/src";
 
@@ -42,6 +44,26 @@ describe("CreateComponent", () => {
         const out = createComponent(p => p, nonObject);
         expect(out).toEqual({});
       });
+    });
+  });
+});
+
+describe("Inspect Elements", () => {
+  test("inspect one component", () => {
+    createRoot(() => {
+      const elements = inspectElements(() => createComponent(Comp, {
+        greeting: "Hi",
+        get name() {
+          return "dynamic";
+        }
+      }));
+      expect(elements.length).toBe(1)
+      const [element] = elements
+      expect(isComponentObject(element)).toBe(true)
+      if (isComponentObject(element)) {
+        expect(element.Component === Comp).toBeTruthy();
+        expect(element.props.greeting).toBe("Hi");
+      }
     });
   });
 });
